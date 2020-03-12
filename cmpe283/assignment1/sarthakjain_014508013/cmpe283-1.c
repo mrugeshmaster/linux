@@ -12,7 +12,8 @@
  * See SDM volume 4, section 2.1
  */
 #define IA32_VMX_PINBASED_CTLS	0x481
-
+#define IA32_VMX_PROCBASED_CTLS 0x482
+#define IA32_VMX_PROCBASED_CTLS2 0X48B
 /*
  * struct caapability_info
  *
@@ -38,6 +39,61 @@ struct capability_info pinbased[5] =
 	{ 7, "Process Posted Interrupts" }
 };
 
+struct capability_info procbased[21] = 
+{
+	{2, "Interrupt-window exiting" },
+	{3, "Use TSC offsetting" },
+	{7, "HLT exiting" },
+	{9, "INVLPG exiting" },
+	{10, "MWAIT exiting" },
+	{11, "RDPMC exiting" },
+	{12, "RDTSC exiting" },
+	{15, "CR3-load exiting" },
+	{16, "CR3-store exiting" },
+	{19, "CR8-load exiting" },
+	{20, "CR8-store exiting" },
+	{21, "Use TPR shadow" },
+	{22, "NMI-window exiting" },
+	{23, "MOV-DR exiting" },
+	{24, "Unconditional I/O exiting" },
+	{25, "Use I/O bitmaps" },
+	{27, "Monitor trap flag" },
+	{28, "Use MSR bitmaps" },
+	{29, "MONITOR exiting" },
+	{30, "PAUSE exiting" },
+	{31, "Activate secondary controls" }
+};
+
+struct capability_info secondary_procbased[27] = 
+{
+	{0, "Virtualize APIC accesses" },
+	{1, "Enable EPT" },
+	{2, "Descriptor-table exiting" },
+	{3, "Enable RDTSCP"},
+	{4, "Virtualize x2APIC mode" },
+	{5, "Enable VPID" },
+	{6, "WBINVD exiting" },
+	{7, "Unrestricted guest" },
+	{8, "APIC-register virtualization" },
+	{9, "Virtual-interrupt delivery" },
+	{10, "PAUSE-loop exiting" },
+	{11, "RDRAND exiting" },
+	{12, "Enable INVPCID" },
+	{13, "Enable VM functions" },
+	{14, "VMCS shadowing" },
+	{15, "Enable ENCLS exiting" },
+	{16, "RDSEED exiting" },
+	{17, "Enable PML" },
+	{18, "EPT-violation #VE" },
+	{19, "Conceal VMX from PT" },
+	{20, "Enable XSAVES/XRSTORS" },
+	{22, "Mode-based execute control for EPT" },
+	{23, "Sub-page write permissions for EPT" },
+	{24, "Intel PT uses guest physical addresses" },
+	{25, "Use TSC scaling" },
+	{26, "Enable user wait and pause" },
+	{28, "Enable ENCLV exiting" }
+};
 /*
  * report_capability
  *
@@ -85,6 +141,25 @@ detect_vmx_features(void)
 	pr_info("Pinbased Controls MSR: 0x%llx\n",
 		(uint64_t)(lo | (uint64_t)hi << 32));
 	report_capability(pinbased, 5, lo, hi);
+
+	/* Procbased controls */
+	rdmsr(IA32_VMX_PROCBASED_CTLS, lo, hi);
+	pr_info("Procbased Controls MSR: 0x%llx\n",
+		(uint64_t)(lo | (uint64_t)hi << 32));
+	report_capability(procbased, 21, lo, hi);
+
+	if(hi & (1<<31))
+	{
+		/* Secondary Procbased controls */
+		rdmsr(IA32_VMX_PROCBASED_CTLS2, lo, hi);
+		pr_info("Secondary Procbased Controls MSR: 0x%llx\n",
+			(uint64_t)(lo | (uint64_t)hi << 32));
+		report_capability(secondary_procbased, 27, lo, hi);
+	}
+	else
+	{
+		pr_info("Secondary Procbased Controls are not available\n");
+	}
 }
 
 /*
