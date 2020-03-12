@@ -39,6 +39,12 @@ struct capability_info pinbased[5] =
 	{ 7, "Process Posted Interrupts" }
 };
 
+
+/*
+ * Procbased capabilities
+ * See SDM volume 3, section 24.6.2
+ * table 24-6
+ */
 struct capability_info procbased[21] = 
 {
 	{2, "Interrupt-window exiting" },
@@ -64,6 +70,12 @@ struct capability_info procbased[21] =
 	{31, "Activate secondary controls" }
 };
 
+
+/*
+ * Secondary Procbased capabilities
+ * See SDM volume 3, section 24.6.2
+ * table 24-7
+ */
 struct capability_info secondary_procbased[27] = 
 {
 	{0, "Virtualize APIC accesses" },
