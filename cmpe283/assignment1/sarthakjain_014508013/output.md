@@ -1,5 +1,7 @@
-**Assignment 1**
+# Assignment 1 - Discover VMX Features
+## dmesg output for my cmpe283_1 inserted kernel module - Pinbased, Procbased & Secondary Procbased Controls ##
 
+```
 [ 1431.624266] cmpe283_1: loading out-of-tree module taints kernel.
 [ 1431.624269] cmpe283_1: module license 'unspecified' taints kernel.
 [ 1431.624270] Disabling lock debugging due to kernel taint
@@ -62,3 +64,4 @@
 [ 1431.624552]   Enable user wait and pause: Can set=No, Can clear=Yes
 [ 1431.624553]   Enable ENCLV exiting: Can set=No, Can clear=Yes
 [ 1521.911958] CMPE 283 Assignment 1 Module Exits
+```
