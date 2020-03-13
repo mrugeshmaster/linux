@@ -158,8 +158,14 @@ detect_vmx_features(void)
 	rdmsr(IA32_VMX_PROCBASED_CTLS, lo, hi);
 	pr_info("Procbased Controls MSR: 0x%llx\n",
 		(uint64_t)(lo | (uint64_t)hi << 32));
+	pr_info("MSR lo 0x%llx and hi 0x%llx bit values\n",(uint64_t)(lo),(uint64_t)(hi));
 	report_capability(procbased, 21, lo, hi);
 
+	/*
+	 * Appendix A of Volume 3.
+	 * Section A.3.3 tells to read bit 63 of IA32_VMX_PROCBASED_CTLS MSR
+	 * IF value is 1 then secondary processor based controls are present.
+	 */
 	if(hi & (1<<31))
 	{
 		/* Secondary Procbased controls */
