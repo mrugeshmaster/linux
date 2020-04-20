@@ -5800,8 +5800,8 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
-	//extern uint32_t num_exits;
-	//num_exits++;
+	extern uint32_t num_exits;
+	num_exits++;
 
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 
