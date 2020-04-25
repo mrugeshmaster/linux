@@ -5814,9 +5814,6 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	//Starting Time Stamp Counter
 	start_time[exit_reason] = rdtsc();	
 
-	extern uint32_t num_exits[69];
-	extern uint32_t exits_valid[69];
-	
 	if(exit_reason >= 0 && exit_reason < 69 && exits_valid[exit_reason] == 1){
 		num_exits[exit_reason]++;
 	}
