@@ -5794,14 +5794,29 @@ void dump_vmcs(void)
  * The guest has exited.  See if we can fix it or if we need userspace
  * assistance.
  */
+
+uint64_t start_time[69];
+uint64_t end_time[69];
+
 static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	enum exit_fastpath_completion exit_fastpath)
 {
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
-	//extern uint32_t num_exits;
-	//num_exits++;
+
+	int kvm_exits; //to store kvm_vmx_exit_handlers[exit_reason](vcpu); 
+
+	extern uint32_t num_exits[69];
+	extern uint32_t exits_valid[69];
+	extern uint64_t time_spent[69];
+
+	//Starting Time Stamp Counter
+	start_time[exit_reason] = rdtsc();	
+
+	if(exit_reason >= 0 && exit_reason < 69 && exits_valid[exit_reason] == 1){
+		num_exits[exit_reason]++;
+	}
 
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
 
@@ -5910,7 +5925,18 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	if (!kvm_vmx_exit_handlers[exit_reason])
 		goto unexpected_vmexit;
 
-	return kvm_vmx_exit_handlers[exit_reason](vcpu);
+	// assigned kvm_vmx_exit_handlers[exit_reason](vcpu) to a variable to prevent function return
+	kvm_exits = kvm_vmx_exit_handlers[exit_reason](vcpu); 
+
+	//Stopping Time Stamp Counter
+	end_time[exit_reason] = rdtsc();
+	
+	if(exit_reason >= 0 && exit_reason < 69 && exits_valid[exit_reason] == 1) {
+		time_spent[exit_reason] += (end_time[exit_reason] - start_time[exit_reason]);
+	}
+	
+	//return kvm_vmx_exit_handlers[exit_reason](vcpu); 
+	return kvm_exits;
 
 unexpected_vmexit:
 	vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n", exit_reason);

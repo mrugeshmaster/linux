@@ -1053,8 +1053,25 @@ bool kvm_cpuid(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
 	return found;
 }
 EXPORT_SYMBOL_GPL(kvm_cpuid);
-//uint32_t num_exits;
-//EXPORT_SYMBOL(num_exits);
+
+/*
+ * 1 -> IF exit reason given in SDM and there is a handler in kvm_vmx_exit_handlers[] in vmx.c file
+ * 0 -> If exit reason given in SDM and no handler present in kvm_vmx_exit_handlers[] in vmx.c file
+ * -1 -> If exit reason not given in SDM.  
+ */
+
+uint32_t exits_valid[69] = {1,1,1,0,0,0,0,1,1,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,-1,1,1,-1,1,1,1,-1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,-1,0,0,0};
+
+uint32_t num_exits[69];
+
+EXPORT_SYMBOL(exits_valid);
+EXPORT_SYMBOL(num_exits);
+
+
+//for calculating time spent during exits
+uint64_t time_spent[69];
+EXPORT_SYMBOL(time_spent);
+
 
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
@@ -1065,11 +1082,85 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
-	//if (eax == 0x4fffffff){
-	//	eax = num_exits;
-	//} else {
+	if (eax == 0x4fffffff) {
+		uint32_t result = 0;
+		int i;
+		for(i = 0 ; i < 69 ; i++)
+		{
+			if(exits_valid[i] == 1){
+				result = result + num_exits[i];
+			}
+		}
+		eax = result;
+	} 
+
+	else if (eax==0x4ffffffe) {
+
+		uint64_t time_temp = 0;
+		int i;
+		for(i = 0 ; i < 69 ; i++)
+		{
+			if(exits_valid[i] == 1) {
+				time_temp = time_temp + time_spent[i];
+			}
+		}
+ 		ebx = time_temp;
+ 		ecx = time_temp >> 32; 
+ 	}
+	
+	else if (eax == 0x4ffffffd) {
+		/*
+		 * SDM exit reason number goes from 0 to 69.
+		 * Anything outside this boundary is considered not defined by SDM.
+		 */
+		if (ecx < 0 || ecx >= 69 || exits_valid[ecx] == -1) {
+			eax = 0;
+			ebx = 0;
+			ecx = 0;
+			edx = 0xffffffff;
+		}
+	        /*
+		 * Below condition if exit reason given in SDM but handler not given in kvm_vmx_exit_handler[]
+		 */	
+		else if (exits_valid[ecx] == 0) {
+			eax = 0;
+			ebx = 0;
+			ecx = 0;
+			edx = 0;
+		}
+		else {
+			eax = num_exits[ecx];
+		}
+	} 
+	else if (eax == 0x4ffffffc) {
+		/*
+		 * SDM exit reason number goes from 0 to 69.
+		 * Anything outside this boundary is considered not defined by SDM.
+		 */
+		if (ecx < 0 || ecx >= 69 || exits_valid[ecx] == -1) {
+			eax = 0;
+			ebx = 0;
+			ecx = 0;
+			edx = 0xffffffff;
+		}
+	        /*
+		 * Below condition if exit reason given in SDM but handler not given in kvm_vmx_exit_handler[]
+		 */	
+		else if (exits_valid[ecx] == 0) {
+			eax = 0;
+			ebx = 0;
+			ecx = 0;
+			edx = 0;
+		}
+		else {
+			ebx = time_spent[ecx];
+			ecx = time_spent[ecx] >> 32;
+		}
+	} 
+	else {
 		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
-	//}
+	}
+	
 	kvm_rax_write(vcpu, eax);
 	kvm_rbx_write(vcpu, ebx);
 	kvm_rcx_write(vcpu, ecx);
