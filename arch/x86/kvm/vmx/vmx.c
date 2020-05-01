@@ -5795,8 +5795,12 @@ void dump_vmcs(void)
  * assistance.
  */
 
+//atomic_t start_time[69];
+//atomic_t end_time[69];
 uint64_t start_time[69];
 uint64_t end_time[69];
+uint64_t time_diff[69];
+//std::atomic_uint64_t start_time[69];
 
 static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	enum exit_fastpath_completion exit_fastpath)
@@ -5807,15 +5811,22 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 
 	int kvm_exits; //to store kvm_vmx_exit_handlers[exit_reason](vcpu); 
 
-	extern uint32_t num_exits[69];
+	extern atomic_t num_exits[69];
 	extern uint32_t exits_valid[69];
-	extern uint64_t time_spent[69];
+	//extern atomic_t time_spent[69];
+	extern atomic64_t time_spent[69];
+	//extern uint64_t time_spent[69]; 
 
 	//Starting Time Stamp Counter
+	//printk("Start Time : %llu\n",rdtsc());
 	start_time[exit_reason] = rdtsc();	
+	//printk("Exit Reason %d \t Start Time %llu",exit_reason,start_time[exit_reason]);
 
-	if(exit_reason >= 0 && exit_reason < 69 && exits_valid[exit_reason] == 1){
-		num_exits[exit_reason]++;
+	//start_time[exit_reason].store(rdtsc(),std::memory_order_relaxed);
+	//atomic_set(&start_time[exit_reason],rdtsc());
+
+	if(exit_reason >= 0 && exit_reason < 69){
+		atomic_inc(&num_exits[exit_reason]);
 	}
 
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
@@ -5929,10 +5940,22 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 	kvm_exits = kvm_vmx_exit_handlers[exit_reason](vcpu); 
 
 	//Stopping Time Stamp Counter
+	//printk("End Time : %llu\n",rdtsc());
 	end_time[exit_reason] = rdtsc();
+	//printk("Exit Reason %d \t End Time %llu",exit_reason,end_time[exit_reason]);
+	//printk("Exit Reason %d \t Time Spent %llu",exit_reason,(end_time[exit_reason]-start_time[exit_reason]));
+	//end_time[exit_reason].store(rdtsc(),std::memory_order_relaxed);
+	//atomic_set(&end_time[exit_reason],rdtsc());
 	
 	if(exit_reason >= 0 && exit_reason < 69 && exits_valid[exit_reason] == 1) {
-		time_spent[exit_reason] += (end_time[exit_reason] - start_time[exit_reason]);
+		time_diff[exit_reason] = (end_time[exit_reason] - start_time[exit_reason]);
+		//time_spent[exit_reason] += time_diff[exit_reason];
+		atomic64_add(time_diff[exit_reason],&time_spent[exit_reason]);
+		// if(exit_reason != 48)
+		// 	printk("Exit Reason %d CPU Cycles Frequency %llu",exit_reason,time_diff[exit_reason]);
+		//atomic_add(time_diff,&time_spent[exit_reason]);
+		//atomic_add(atomic_read(&time_spent[exit_reason]),(atomic_read(&start_time[exit_reason]), atomic_read(&end_time[exit_reason])));
+
 	}
 	
 	//return kvm_vmx_exit_handlers[exit_reason](vcpu); 
