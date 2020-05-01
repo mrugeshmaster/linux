@@ -1062,7 +1062,7 @@ EXPORT_SYMBOL_GPL(kvm_cpuid);
 
 uint32_t exits_valid[69] = {1,1,1,0,0,0,0,1,1,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,-1,1,1,-1,1,1,1,-1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,-1,0,0,0};
 
-uint32_t num_exits[69];
+atomic_t num_exits[69];
 
 EXPORT_SYMBOL(exits_valid);
 EXPORT_SYMBOL(num_exits);
@@ -1083,15 +1083,17 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
 	if (eax == 0x4fffffff) {
-		uint32_t result = 0;
+		atomic_t result = ATOMIC_INIT(0);
 		int i;
 		for(i = 0 ; i < 69 ; i++)
 		{
-			if(exits_valid[i] == 1){
-				result = result + num_exits[i];
-			}
+			//if(exits_valid[i] == 1){
+			//result = result + num_exits[i];
+			//}
+			atomic_add(atomic_read(&num_exits[i]), &result);
 		}
-		eax = result;
+		//eax = result;
+		eax = atomic_read(&result);
 	} 
 
 	else if (eax==0x4ffffffe) {
@@ -1129,7 +1131,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 			edx = 0;
 		}
 		else {
-			eax = num_exits[ecx];
+			eax = atomic_read(&num_exits[ecx]);
 		}
 	} 
 	else if (eax == 0x4ffffffc) {

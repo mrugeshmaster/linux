@@ -5807,15 +5807,15 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu,
 
 	int kvm_exits; //to store kvm_vmx_exit_handlers[exit_reason](vcpu); 
 
-	extern uint32_t num_exits[69];
+	extern atomic_t num_exits[69];
 	extern uint32_t exits_valid[69];
 	extern uint64_t time_spent[69];
 
 	//Starting Time Stamp Counter
 	start_time[exit_reason] = rdtsc();	
 
-	if(exit_reason >= 0 && exit_reason < 69 && exits_valid[exit_reason] == 1){
-		num_exits[exit_reason]++;
+	if(exit_reason >= 0 && exit_reason < 69){
+		atomic_inc(&num_exits[exit_reason]);
 	}
 
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
